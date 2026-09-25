@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dialia & Tolan's Adventure</title>
+    <!-- استيراد خط ماينكرافت من جوجل -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* إعدادات عامة بأسلوب ماينكرافت */
+        :root {
+            --mc-green: #5D7C15;
+            --mc-dirt: #8B4513;
+            --mc-stone: #7B7B7B;
+            --mc-sky: #4FC3F7;
+            --mc-border-light: #ffffff;
+            --mc-border-dark: #333333;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--mc-sky);
+            font-family: 'Press Start 2P', cursive;
+            color: white;
+            text-shadow: 2px 2px 0 #000;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            /* تأثير الـ scanlines الخفيف */
+            background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 4px 4px;
+        }
+
+        /* حاوية اللعبة */
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* أرضية ماينكرافت ثابتة في الأسفل */
+        .ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 15vh;
+            background-color: var(--mc-dirt);
+            border-top: 15px solid var(--mc-green);
+            image-rendering: pixelated;
+        }
+
+        /* المشاهد */
+        .scene {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* أزرار ماينكرافت */
+        .mc-btn {
+            background-color: #727272;
+            border: 4px solid;
+            border-color: #A0A0A0 #3E3E3E #3E3E3E #A0A0A0;
+            color: white;
+            padding: 15px 30px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 30px;
+            text-shadow: 2px 2px 0 #000;
+            box-shadow: inset -2px -2px 0px rgba(0,0,0,0.25);
+            transition: transform 0.1s;
+        }
+
+        .mc-btn:active {
+            border-color: #3E3E3E #A0A0A0 #A0A0A0 #3E3E3E;
+            transform: scale(0.95);
+        }
+
+        /* إطار الصور بطراز البيكسل */
+        .pixel-frame {
+            border: 8px solid;
+            border-color: #e0e0e0 #555555 #555555 #e0e0e0;
+            background-color: #8b8b8b;
+            padding: 5px;
+            margin-bottom: 20px;
+            box-shadow: 5px 5px 0px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .pixel-frame img {
+            width: 250px;
+            height: 250px;
+            object-fit: cover;
+            display: block;
+            image-rendering: pixelated;
+        }
+
+        /* النصوص والبطاقات */
+        .stats-panel {
+            background-color: rgba(0, 0, 0, 0.7);
+            border: 2px solid white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            font-size: 12px;
+            line-height: 1.8;
+            max-width: 400px;
+            text-align: right;
+        }
+
+        .title-text {
+            font-size: 24px;
+            color: #FFFF55; /* لون ذهبي ماينكرافت */
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        /* شريط الخبرة (XP Bar) */
+        .xp-bar-container {
+            position: absolute;
+            bottom: 20px;
+            width: 80%;
+            height: 15px;
+            background-color: #222;
+            border: 2px solid #000;
+            z-index: 20;
+            border-radius: 2px;
+        }
+
+        .xp-bar-fill {
+            height: 100%;
+            background-color: #84FF32;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        /* لعبة اصطياد المكعبات */
+        .minigame-area {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            border: 4px solid var(--mc-stone);
+            background-color: rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+
+        .mole-block {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: var(--mc-dirt);
+            border-top: 8px solid var(--mc-green);
+            cursor: pointer;
+            box-shadow: 2px 2px 0px #000;
+            animation: blockPop 0.2s ease-out;
+            touch-action: manipulation;
+        }
+
+        @keyframes blockPop {
+            from { transform: translateY(20px) scale(0.5); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        /* جزيئات (Particles) */
+        .particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: #FFF;
+            pointer-events: none;
+            z-index: 100;
+            animation: fall 1s linear forwards;
+        }
+
+        @keyframes fall {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(100px) scale(0); opacity: 0; }
+        }
+
+        /* ستيف بيكسل آرت CSS */
+        .steve {
+            width: 64px;
+            height: 64px;
+            background: 
+                /* Head */
+                linear-gradient(#f9cda3, #f9cda3) 16px 0px / 32px 32px no-repeat,
+                /* Hair */
+                linear-gradient(#4a3123, #4a3123) 16px 0px / 32px 8px no-repeat,
+                /* Body */
+                linear-gradient(#00a8ff, #00a8ff) 16px 32px / 32px 32px no-repeat;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        /* كريبر بيكسل آرت CSS */
+        .creeper {
+            width: 64px;
+            height: 64px;
+            background-color: #55FF55; /* لون الكريبر الأساسي */
+            background-image: 
+                /* Eyes */
+                linear-gradient(#000, #000), linear-gradient(#000, #000),
+                /* Nose/Mouth center */
+                linear-gradient(#000, #000),
+                /* Mouth sides */
+                linear-gradient(#000, #000), linear-gradient(#000, #000);
+            background-position: 
+                12px 16px, 36px 16px,
+                24px 32px,
+                16px 40px, 40px 40px;
+            background-size: 
+                16px 16px, 16px 16px,
+                16px 24px,
+                8px 24px, 8px 24px;
+            background-repeat: no-repeat;
+            margin: 0 auto 20px auto;
+        }
+
+        /* حجر بيكسل آرت CSS */
+        .stone-block {
+            width: 50px;
+            height: 50px;
+            background-color: var(--mc-stone);
+            border: 4px solid #a0a0a0;
+            border-bottom-color: #555;
+            border-right-color: #555;
+            display: inline-block;
+            margin: 5px;
+        }
+
+        /* شاشة النهاية */
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            z-index: 50;
+            animation: shower 2s infinite linear;
+        }
+
+        @keyframes shower {
+            0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ground"></div>
+    
+    <div class="xp-bar-container" id="xp-container" style="display: none;">
+        <div class="xp-bar-fill" id="xp-bar"></div>
+    </div>
+
+    <div id="game-container">
+        
+        <!-- المشهد الأول: البداية -->
+        <div class="scene active" id="scene-0">
+            <div class="title-text">Dialia & Tolan's<br>Adventure</div>
+            <div class="steve"></div>
+            <p>مرحباً بكما في العالم المكعب!</p>
+            <button class="mc-btn" onclick="startGame()">اضغط للبدء</button>
+        </div>
+
+        <!-- المشهد الثاني: الميني جيم -->
+        <div class="scene" id="scene-1">
+            <div class="title-text" style="font-size: 16px;">اجمع 5 مكعبات تراب لتفتح القصة!</div>
+            <div class="minigame-area" id="minigame-area"></div>
+            <p id="score-text">المكعبات: 0 / 5</p>
+        </div>
+
+        <!-- المشهد الثالث: مقدمة القصة -->
+        <div class="scene" id="scene-2">
+            <div style="display: flex; gap: 40px; margin-bottom: 40px;">
+                <div class="steve" style="transform: scale(1.5);"></div>
+                <div class="creeper" style="transform: scale(1.5);"></div>
+            </div>
+            <div class="title-text">في يوم من الأيام...<br>كانت في العالم أبطال!</div>
+            <div style="margin-bottom: 20px;">
+                <div class="stone-block"></div>
+                <div class="stone-block"></div>
+                <div class="stone-block"></div>
+            </div>
+            <button class="mc-btn" onclick="nextScene()">التالي</button>
+        </div>
+
+        <!-- المشهد الرابع: دياليا -->
+        <div class="scene" id="scene-3">
+            <div class="title-text">دياليا - الـ Warrior القوية 💪⚔️</div>
+            <div class="pixel-frame">
+                <img src="diala.jpg" alt="Dialia">
+            </div>
+            <div class="stats-panel">
+                <div style="color: #FF5555">HP: 100/100</div>
+                <div style="color: #55FFFF">Skill: Smart Student</div>
+                <div style="color: #FFFF55">Weapon: Diamond Sword</div>
+            </div>
+            <button class="mc-btn" onclick="nextScene()">التالي</button>
+        </div>
+
+        <!-- المشهد الخامس: تولان -->
+        <div class="scene" id="scene-4">
+            <div class="title-text">تولان - The Cat Hero 🐱✨</div>
+            <div class="pixel-frame">
+                <img src="tolan.jpg" alt="Tolan">
+            </div>
+            <div class="stats-panel">
+                <div style="color: #FF5555">HP: 99/99</div>
+                <div style="color: #55FFFF">Skill: Meow Attack</div>
+                <div style="color: #FF55FF">Special: Face Paint Power</div>
+            </div>
+            <button class="mc-btn" onclick="nextScene()">التالي</button>
+        </div>
+
+        <!-- المشهد السادس: الأم -->
+        <div class="scene" id="scene-5">
+            <div class="title-text">Their Guardian - The Mom Boss 👑</div>
+            <div class="pixel-frame">
+                <img src="family.jpg" alt="Mom and Girls">
+            </div>
+            <div class="stats-panel">
+                <div style="color: #FF5555">HP: ∞ (Unlimited)</div>
+                <div style="color: #55FF55">Power: Mom Mode</div>
+                <div style="color: #FFAA00">Aura: Endless Love</div>
+            </div>
+            <button class="mc-btn" onclick="nextScene()">التالي</button>
+        </div>
+
+        <!-- المشهد السابع: العم شهاب -->
+        <div class="scene" id="scene-6">
+            <div class="title-text">The Quest Giver - Uncle Shehab 🎮</div>
+            <div class="pixel-frame">
+                <img src="us.jpg" alt="Uncle and Girls">
+            </div>
+            <div class="stats-panel">
+                <div style="color: #55FFFF">Mission: Make them smile today!</div>
+                <div style="color: #FFAA00">Reward: 1000 Diamond Blocks 💎</div>
+            </div>
+            <button class="mc-btn" onclick="nextScene()">التالي</button>
+        </div>
+
+        <!-- المشهد الثامن: النهاية -->
+        <div class="scene" id="scene-7">
+            <div class="title-text" style="font-size: 32px; color: #55FF55;">LEVEL COMPLETE! ⭐</div>
+            <p style="font-size: 14px; line-height: 2;">
+                لقد أكملتم المغامرة بنجاح!<br>
+                أتمنى لكم يوماً سعيداً ومليئاً باللعب والمرح.
+            </p>
+            <button class="mc-btn" onclick="location.reload()">العب مرة أخرى</button>
+        </div>
+
+    </div>
+
+    <script>
+        // الأصوات باستخدام Web Audio API
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // دالة لإنشاء صوت النقر (Click)
+        function playClickSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.1);
+            
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        // دالة لإنشاء صوت كسر المكعب (Plop/Pop)
+        function playPopSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1);
+            
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        // جزيئات الاحتفال (Particles)
+        function createParticles(x, y, color = '#FFF', count = 10) {
+            for(let i=0; i<count; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.backgroundColor = color;
+                particle.style.left = x + (Math.random() * 40 - 20) + 'px';
+                particle.style.top = y + (Math.random() * 40 - 20) + 'px';
+                
+                // إضافة سرعة واتجاه عشوائي
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 50 + 20;
+                particle.style.transform = `translate(${Math.cos(angle)*speed}px, ${Math.sin(angle)*speed}px)`;
+                
+                document.body.appendChild(particle);
+                setTimeout(() => particle.remove(), 1000);
+            }
+        }
+
+        let currentScene = 0;
+        const totalScenes = 7;
+        let score = 0;
+
+        function startGame() {
+            playClickSound();
+            document.getElementById('xp-container').style.display = 'block';
+            goToScene(1);
+            startMinigame();
+        }
+
+        function goToScene(index) {
+            document.querySelectorAll('.scene').forEach(el => el.classList.remove('active'));
+            document.getElementById('scene-' + index).classList.add('active');
+            currentScene = index;
+            updateXP();
+
+            // إضافة تأثير الجزيئات عند ظهور المشاهد اللي فيها صور
+            if(index >= 3 && index <= 6) {
+                setTimeout(() => {
+                    const rect = document.getElementById('scene-' + index).querySelector('img').getBoundingClientRect();
+                    createParticles(rect.left + rect.width/2, rect.top + rect.height/2, '#55FFFF', 20);
+                }, 300);
+            }
+
+            if(index === 7) {
+                startConfetti();
+            }
+        }
+
+        function nextScene() {
+            playClickSound();
+            if(currentScene < totalScenes) {
+                goToScene(currentScene + 1);
+            }
+        }
+
+        function updateXP() {
+            // المشاهد التي تزيد الـ XP هي من 2 لـ 7
+            let progress = 0;
+            if (currentScene >= 2) {
+                progress = ((currentScene - 1) / (totalScenes - 1)) * 100;
+            }
+            document.getElementById('xp-bar').style.width = progress + '%';
+        }
+
+        // لعبة اصطياد المكعبات
+        let moleInterval;
+        let activeBlocks = 0;
+        const MAX_BLOCKS = 4;
+
+        function startMinigame() {
+            const area = document.getElementById('minigame-area');
+            score = 0; // إعادة تعيين النتيجة
+            activeBlocks = 0;
+            document.getElementById('score-text').innerText = 'المكعبات: 0 / 5';
+            
+            function spawnBlock() {
+                if (currentScene !== 1) return; // توقف إذا تغير المشهد
+                if (activeBlocks >= MAX_BLOCKS) return; // حد أقصى للمكعبات
+                
+                const block = document.createElement('div');
+                block.className = 'mole-block';
+                
+                // تحديد مكان عشوائي داخل المنطقة
+                const maxX = area.clientWidth - 55;
+                const maxY = area.clientHeight - 55;
+                block.style.left = Math.floor(Math.random() * Math.max(maxX, 0)) + 'px';
+                block.style.top = Math.floor(Math.random() * Math.max(maxY, 0)) + 'px';
+                
+                activeBlocks++;
+
+                const hitBlock = function(e) {
+                    if (!block.parentElement) return;
+                    playPopSound();
+                    const rect = block.getBoundingClientRect();
+                    createParticles(rect.left + 25, rect.top + 25, '#8B4513', 15);
+                    block.remove();
+                    activeBlocks = Math.max(0, activeBlocks - 1);
+                    score++;
+                    document.getElementById('score-text').innerText = `المكعبات: ${score} / 5`;
+                    if (score >= 5) {
+                        clearInterval(moleInterval);
+                        setTimeout(() => goToScene(2), 500);
+                    }
+                };
+                block.addEventListener('click', hitBlock);
+                block.addEventListener('touchstart', hitBlock, { passive: true });
+                
+                area.appendChild(block);
+                
+                // إخفاء المكعب بعد 1.5 ثانية
+                setTimeout(() => {
+                    if (block.parentElement) {
+                        block.remove();
+                        activeBlocks = Math.max(0, activeBlocks - 1);
+                    }
+                }, 1500);
+            }
+
+            moleInterval = setInterval(spawnBlock, 800);
+        }
+
+        // تأثير الاحتفال (Confetti) في النهاية
+        function startConfetti() {
+            const colors = ['#FF5555', '#55FF55', '#55FFFF', '#FFFF55', '#FF55FF'];
+            setInterval(() => {
+                const conf = document.createElement('div');
+                conf.className = 'confetti';
+                conf.style.left = Math.random() * 100 + 'vw';
+                conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                document.body.appendChild(conf);
+                setTimeout(() => conf.remove(), 2500);
+            }, 100);
+            playPopSound();
+            setTimeout(playPopSound, 200);
+            setTimeout(playPopSound, 400);
+        }
+    </script>
+</body>
+</html>
