@@ -70,7 +70,8 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 20px 15px 80px 15px; /* padding أسفل عشان الأرضية */
+            /* padding: أعلى + جانبين + أسفل (فوق الأرضية + XP bar) */
+            padding: 20px 15px 100px 15px;
             text-align: center;
             z-index: 10;
         }
@@ -80,8 +81,11 @@
             display: none;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            /* flex-start بدل center عشان المحتوى مش يتقطع من فوق */
+            justify-content: flex-start;
             width: 100%;
+            /* padding فوق عشان العنوان مش يلاصق الحافة */
+            padding-top: 10px;
             animation: fadeIn 0.4s ease-in-out;
         }
 
@@ -96,11 +100,14 @@
 
         /* عنوان الشاشة الرئيسي */
         .title-text {
-            font-size: clamp(14px, 4vw, 24px);
+            /* أصغر شوية عشان يفضل جوه الشاشة */
+            font-size: clamp(11px, 3.2vw, 20px);
             color: #FFFF55;
-            margin-bottom: 20px;
-            line-height: 1.8;
+            margin-bottom: 15px;
+            line-height: 1.9;
             word-break: break-word;
+            width: 100%;
+
         }
 
         /* أزرار ماينكرافت */
@@ -109,17 +116,16 @@
             border: 4px solid;
             border-color: #A0A0A0 #3E3E3E #3E3E3E #A0A0A0;
             color: white;
-            padding: 14px 24px;
+            padding: 12px 22px;
             font-family: 'Press Start 2P', cursive;
-            font-size: clamp(11px, 3vw, 16px);
+            font-size: clamp(10px, 2.8vw, 15px);
             cursor: pointer;
-            margin-top: 20px;
+            margin-top: 12px;
             text-shadow: 2px 2px 0 #000;
             box-shadow: inset -2px -2px 0px rgba(0,0,0,0.25);
             transition: transform 0.1s;
-            /* حجم touch target كافي للموبايل */
-            min-width: 180px;
-            min-height: 50px;
+            min-width: 160px;
+            min-height: 46px;
         }
 
         .mc-btn:active {
@@ -138,9 +144,9 @@
         }
 
         .pixel-frame img {
-            /* حجم ديناميكي حسب الشاشة */
-            width: min(220px, 60vw);
-            height: min(220px, 60vw);
+            /* حجم أصغر عشان كل الصفحة تظهر بدون قطع */
+            width: min(180px, 50vw);
+            height: min(180px, 50vw);
             object-fit: cover;
             /* الوجه دايماً فوق مش متقطع */
             object-position: top center;
@@ -151,9 +157,9 @@
         .stats-panel {
             background-color: rgba(0,0,0,0.75);
             border: 2px solid white;
-            padding: 12px;
-            margin-top: 12px;
-            font-size: clamp(9px, 2.5vw, 12px);
+            padding: 10px 12px;
+            margin-top: 10px;
+            font-size: clamp(8px, 2.2vw, 11px);
             line-height: 2;
             width: 90%;
             max-width: 360px;
